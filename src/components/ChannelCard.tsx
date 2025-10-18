@@ -63,21 +63,38 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           </p>
         )}
         
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Button
-            onClick={() => navigate(`/channel/${id}`)}
-            className="flex-1 gradient-broadcast"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/broadcast/${id}`)}
           >
-            <Settings className="w-4 h-4 mr-2" />
-            Gérer
+            <Play className="h-4 w-4 mr-1" />
+            Antenne
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate(`/watch/${id}`)}
-            className="flex-1"
+            size="sm"
+            onClick={() => navigate(`/schedule/${id}`)}
           >
-            <Play className="w-4 h-4 mr-2" />
-            Voir
+            <Settings className="h-4 w-4 mr-1" />
+            Grille
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/transmission/${id}`)}
+          >
+            <Radio className="h-4 w-4 mr-1" />
+            TNT
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/embed/${id}`)}
+          >
+            <Tv className="h-4 w-4 mr-1" />
+            Embed
           </Button>
         </div>
       </div>

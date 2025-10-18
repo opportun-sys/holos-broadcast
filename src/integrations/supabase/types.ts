@@ -16,8 +16,12 @@ export type Database = {
     Tables: {
       channels: {
         Row: {
+          allowed_domains: string[] | null
           created_at: string
           description: string | null
+          embed_enabled: boolean | null
+          embed_primary_color: string | null
+          embed_show_guide: boolean | null
           hls_url: string | null
           id: string
           is_live: boolean | null
@@ -29,8 +33,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allowed_domains?: string[] | null
           created_at?: string
           description?: string | null
+          embed_enabled?: boolean | null
+          embed_primary_color?: string | null
+          embed_show_guide?: boolean | null
           hls_url?: string | null
           id?: string
           is_live?: boolean | null
@@ -42,8 +50,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allowed_domains?: string[] | null
           created_at?: string
           description?: string | null
+          embed_enabled?: boolean | null
+          embed_primary_color?: string | null
+          embed_show_guide?: boolean | null
           hls_url?: string | null
           id?: string
           is_live?: boolean | null
@@ -100,33 +112,116 @@ export type Database = {
           },
         ]
       }
+      transmission_logs: {
+        Row: {
+          audio_format: string | null
+          bitrate: number | null
+          channel_id: string
+          created_at: string
+          ended_at: string | null
+          error_message: string | null
+          format: string | null
+          id: string
+          protocol: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          audio_format?: string | null
+          bitrate?: number | null
+          channel_id: string
+          created_at?: string
+          ended_at?: string | null
+          error_message?: string | null
+          format?: string | null
+          id?: string
+          protocol?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          audio_format?: string | null
+          bitrate?: number | null
+          channel_id?: string
+          created_at?: string
+          ended_at?: string | null
+          error_message?: string | null
+          format?: string | null
+          id?: string
+          protocol?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transmission_logs_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_assets: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
           duration_minutes: number | null
+          encoding_status: string | null
           file_url: string
+          hls_url: string | null
           id: string
+          tags: string[] | null
           thumbnail_url: string | null
           title: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
+          encoding_status?: string | null
           file_url: string
+          hls_url?: string | null
           id?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           title: string
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
+          encoding_status?: string | null
           file_url?: string
+          hls_url?: string | null
           id?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
           user_id?: string
@@ -138,10 +233,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operator" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -268,6 +373,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operator", "viewer"],
+    },
   },
 } as const
