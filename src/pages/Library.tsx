@@ -30,6 +30,8 @@ export default function Library() {
   const [videos, setVideos] = useState<VideoAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadData, setUploadData] = useState({
     title: '',
     description: '',
@@ -61,6 +63,38 @@ export default function Library() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Vérifier le type de fichier
+      const validTypes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/x-msvideo'];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: 'Erreur',
+          description: 'Format de fichier non supporté. Utilisez MP4, MOV, MKV, WEBM ou AVI.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Vérifier la taille (2GB max)
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        toast({
+          title: 'Erreur',
+          description: 'Le fichier est trop volumineux. Maximum 2GB.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+      // Pré-remplir le titre avec le nom du fichier
+      if (!uploadData.title) {
+        setUploadData({ ...uploadData, title: file.name.replace(/\.[^/.]+$/, '') });
+      }
+    }
+  };
+
   const handleUpload = async () => {
     if (!uploadData.title) {
       toast({
@@ -71,41 +105,93 @@ export default function Library() {
       return;
     }
 
+    if (!selectedFile) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un fichier vidéo',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase.from('video_assets').insert({
+      // Upload du fichier vers Supabase Storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obtenir l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      // Créer l'entrée dans la base de données
+      const { error: dbError } = await supabase.from('video_assets').insert({
         title: uploadData.title,
         description: uploadData.description || null,
         category: uploadData.category || null,
         tags: uploadData.tags ? uploadData.tags.split(',').map(t => t.trim()) : [],
-        file_url: 'placeholder.mp4',
+        file_url: publicUrl,
         user_id: user.id,
-        encoding_status: 'pending'
+        encoding_status: 'ready'
       });
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       toast({
         title: 'Succès',
-        description: 'Vidéo ajoutée avec succès'
+        description: 'Vidéo importée avec succès'
       });
 
       setIsUploadOpen(false);
       setUploadData({ title: '', description: '', category: '', tags: '' });
+      setSelectedFile(null);
       fetchVideos();
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'ajouter la vidéo',
+        description: 'Impossible d\'importer la vidéo',
         variant: 'destructive'
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
+      // Récupérer l'URL du fichier avant de supprimer
+      const video = videos.find(v => v.id === id);
+      
+      if (video && video.file_url.includes('videos/')) {
+        // Extraire le chemin du fichier depuis l'URL
+        const urlParts = video.file_url.split('/videos/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1].split('?')[0];
+          
+          // Supprimer le fichier du storage
+          await supabase.storage
+            .from('videos')
+            .remove([filePath]);
+        }
+      }
+
+      // Supprimer l'entrée de la base de données
       const { error } = await supabase
         .from('video_assets')
         .delete()
@@ -119,6 +205,7 @@ export default function Library() {
       });
       fetchVideos();
     } catch (error) {
+      console.error('Delete error:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer la vidéo',
@@ -162,6 +249,24 @@ export default function Library() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
+                  <Label htmlFor="file">Fichier vidéo *</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/x-msvideo"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Formats acceptés : MP4, MOV, MKV, WEBM, AVI (max 2GB)
+                  </p>
+                  {selectedFile && (
+                    <p className="text-sm text-primary mt-2">
+                      ✓ {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+                <div>
                   <Label htmlFor="title">Titre *</Label>
                   <Input
                     id="title"
@@ -197,8 +302,19 @@ export default function Library() {
                     placeholder="action, thriller, 2024"
                   />
                 </div>
-                <Button onClick={handleUpload} className="w-full">
-                  Ajouter à la bibliothèque
+                <Button 
+                  onClick={handleUpload} 
+                  className="w-full"
+                  disabled={isUploading || !selectedFile}
+                >
+                  {isUploading ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Importation en cours...
+                    </>
+                  ) : (
+                    'Ajouter à la bibliothèque'
+                  )}
                 </Button>
               </div>
             </DialogContent>
