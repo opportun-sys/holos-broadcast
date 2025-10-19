@@ -34,7 +34,7 @@ export default function ProgramSchedule() {
     type: 'video',
     start_time: '',
     duration_minutes: 60,
-    repeat_pattern: ''
+    repeat_pattern: 'none'
   });
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function ProgramSchedule() {
         type: newProgram.type,
         start_time: new Date(newProgram.start_time).toISOString(),
         duration_minutes: newProgram.duration_minutes,
-        repeat_pattern: newProgram.repeat_pattern || null
+        repeat_pattern: newProgram.repeat_pattern === 'none' ? null : newProgram.repeat_pattern
       });
 
       if (error) throw error;
@@ -97,7 +97,7 @@ export default function ProgramSchedule() {
         type: 'video',
         start_time: '',
         duration_minutes: 60,
-        repeat_pattern: ''
+        repeat_pattern: 'none'
       });
       fetchPrograms();
     } catch (error) {
@@ -209,7 +209,7 @@ export default function ProgramSchedule() {
                       <SelectValue placeholder="Aucune" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucune</SelectItem>
+                      <SelectItem value="none">Aucune</SelectItem>
                       <SelectItem value="daily">Quotidienne</SelectItem>
                       <SelectItem value="weekly">Hebdomadaire</SelectItem>
                     </SelectContent>
