@@ -136,24 +136,6 @@ export default function Library() {
     return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
   };
 
-  if (!isAdmin && !isOperator) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Accès refusé</CardTitle>
-              <CardDescription>
-                Vous n'avez pas les permissions nécessaires pour accéder à cette page.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
