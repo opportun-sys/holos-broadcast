@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Upload, Play, Trash2, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { VideoPlayer } from '@/components/VideoPlayer';
 
 interface VideoAsset {
   id: string;
@@ -32,6 +33,7 @@ export default function Library() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<VideoAsset | null>(null);
   const [uploadData, setUploadData] = useState({
     title: '',
     description: '',
@@ -365,7 +367,12 @@ export default function Library() {
                     )}
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setPreviewVideo(video)}
+                    >
                       <Play className="h-4 w-4 mr-1" />
                       Prévisualiser
                     </Button>
@@ -383,6 +390,24 @@ export default function Library() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!previewVideo} onOpenChange={() => setPreviewVideo(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{previewVideo?.title}</DialogTitle>
+            {previewVideo?.description && (
+              <CardDescription>{previewVideo.description}</CardDescription>
+            )}
+          </DialogHeader>
+          {previewVideo && (
+            <VideoPlayer 
+              src={previewVideo.file_url} 
+              poster={previewVideo.thumbnail_url || undefined}
+              className="w-full h-[500px]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

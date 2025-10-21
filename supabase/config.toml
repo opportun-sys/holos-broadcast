@@ -1,1 +1,4 @@
 project_id = "kcnrnietrmaldtlltfpp"
+
+[functions.stream-playlist]
+verify_jwt = false

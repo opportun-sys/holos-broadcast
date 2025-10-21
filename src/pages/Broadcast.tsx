@@ -5,8 +5,9 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Radio, Clock } from 'lucide-react';
+import { Radio, Clock, Play, Tv } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { VideoPlayer } from '@/components/VideoPlayer';
 
 interface Channel {
   id: string;
@@ -29,6 +30,37 @@ export default function Broadcast() {
   const [currentProgram, setCurrentProgram] = useState<CurrentProgram | null>(null);
   const [nextProgram, setNextProgram] = useState<CurrentProgram | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStartingStream, setIsStartingStream] = useState(false);
+
+  const handleStartStream = async () => {
+    if (!channelId) return;
+    
+    setIsStartingStream(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stream-playlist', {
+        body: { channelId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Flux démarré",
+        description: `Playlist en direct créée avec ${data.playlist?.length || 0} vidéos`,
+      });
+
+      // Refresh channel data to get new HLS URL
+      await fetchChannelData();
+    } catch (error) {
+      console.error('Error starting stream:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de démarrer le flux",
+        variant: "destructive"
+      });
+    } finally {
+      setIsStartingStream(false);
+    }
+  };
 
   useEffect(() => {
     if (channelId) {
@@ -123,15 +155,43 @@ export default function Broadcast() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="overflow-hidden">
-              <div className="aspect-video bg-muted flex items-center justify-center relative">
-                {channel.hls_url ? (
-                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                    <p className="text-muted-foreground">Lecteur vidéo HLS</p>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <Tv className="h-6 w-6" />
+                      Lecteur vidéo
+                    </CardTitle>
+                    <CardDescription>Flux en direct de {channel.name}</CardDescription>
                   </div>
+                  {!channel.is_live && (
+                    <Button 
+                      onClick={handleStartStream}
+                      disabled={isStartingStream}
+                      className="gap-2"
+                    >
+                      <Play className="h-4 w-4" />
+                      {isStartingStream ? "Démarrage..." : "Démarrer la playlist"}
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <div className="relative">
+                {channel.hls_url ? (
+                  <VideoPlayer 
+                    src={channel.hls_url}
+                    poster={channel.logo_url || undefined}
+                    autoplay={channel.is_live}
+                    className="w-full aspect-video"
+                  />
                 ) : (
-                  <div className="text-center">
-                    <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Aucun flux disponible</p>
+                  <div className="aspect-video bg-muted flex items-center justify-center">
+                    <div className="text-center">
+                      <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Aucun flux actif. Cliquez sur "Démarrer la playlist" pour lancer la diffusion.
+                      </p>
+                    </div>
                   </div>
                 )}
                 {channel.is_live && (
