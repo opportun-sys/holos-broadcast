@@ -2,3 +2,9 @@ project_id = "kcnrnietrmaldtlltfpp"
 
 [functions.stream-playlist]
 verify_jwt = false
+
+[functions.validate-activation-key]
+verify_jwt = false
+
+[functions.generate-activation-key]
+verify_jwt = false

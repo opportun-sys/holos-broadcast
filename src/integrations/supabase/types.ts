@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_keys: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          key: string
+          machine_id: string | null
+          max_usage: number | null
+          usage_count: number
+          user_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          key: string
+          machine_id?: string | null
+          max_usage?: number | null
+          usage_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          key?: string
+          machine_id?: string | null
+          max_usage?: number | null
+          usage_count?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           allowed_domains: string[] | null
@@ -233,6 +278,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_activation_key: { Args: never; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
@@ -243,6 +289,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_activation_key: {
+        Args: { _ip_address?: string; _key: string; _machine_id?: string }
+        Returns: {
+          expires_at: string
+          is_valid: boolean
+          key_id: string
+          message: string
+        }[]
       }
     }
     Enums: {

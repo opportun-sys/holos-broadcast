@@ -11,6 +11,7 @@ import Broadcast from "./pages/Broadcast";
 import ProgramSchedule from "./pages/ProgramSchedule";
 import TNTTransmission from "./pages/TNTTransmission";
 import EmbedSettings from "./pages/EmbedSettings";
+import ActivationKeysAdmin from "./pages/ActivationKeysAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/schedule/:channelId" element={<ProgramSchedule />} />
           <Route path="/transmission/:channelId" element={<TNTTransmission />} />
           <Route path="/embed/:channelId" element={<EmbedSettings />} />
+          <Route path="/admin/activation-keys" element={<ActivationKeysAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
-import { Tv, LogOut, Menu } from "lucide-react";
+import { Tv, LogOut, Menu, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const { isAdmin } = useUserRole();
 
   const handleLogout = async () => {
     try {
@@ -49,6 +51,20 @@ const Header = () => {
       >
         Bibliothèque
       </Button>
+      {isAdmin && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            navigate("/admin/activation-keys");
+            setIsOpen(false);
+          }}
+          className="gap-2"
+        >
+          <Shield className="w-4 h-4" />
+          Clés d'activation
+        </Button>
+      )}
     </nav>
   );
 
