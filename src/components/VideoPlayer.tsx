@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Hls from 'hls.js';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
@@ -24,6 +25,60 @@ export const VideoPlayer = ({ src, poster, autoplay = false, className = "" }: V
     const video = videoRef.current;
     if (!video) return;
 
+    let hls: Hls | null = null;
+
+    // Check if the source is an HLS stream
+    const isHLS = src.endsWith('.m3u8') || src.includes('m3u8');
+
+    if (isHLS) {
+      if (Hls.isSupported()) {
+        hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (autoplay) {
+            video.play();
+          }
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.error('Network error', data);
+                hls?.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error('Media error', data);
+                hls?.recoverMediaError();
+                break;
+              default:
+                console.error('Fatal error', data);
+                hls?.destroy();
+                break;
+            }
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = src;
+        if (autoplay) {
+          video.play();
+        }
+      }
+    } else {
+      // Regular video file
+      video.src = src;
+      if (autoplay) {
+        video.play();
+      }
+    }
+
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     const handleDurationChange = () => setDuration(video.duration);
     const handlePlay = () => setIsPlaying(true);
@@ -35,12 +90,15 @@ export const VideoPlayer = ({ src, poster, autoplay = false, className = "" }: V
     video.addEventListener('pause', handlePause);
 
     return () => {
+      if (hls) {
+        hls.destroy();
+      }
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [src, autoplay]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -99,9 +157,7 @@ export const VideoPlayer = ({ src, poster, autoplay = false, className = "" }: V
     >
       <video
         ref={videoRef}
-        src={src}
         poster={poster}
-        autoPlay={autoplay}
         className="w-full h-full object-contain"
         onClick={togglePlay}
       />

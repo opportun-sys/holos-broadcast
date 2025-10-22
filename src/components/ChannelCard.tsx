@@ -91,7 +91,7 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/embed/${id}`)}
+            onClick={() => navigate(`/embed-settings/${id}`)}
           >
             <Tv className="h-4 w-4 mr-1" />
             Embed
