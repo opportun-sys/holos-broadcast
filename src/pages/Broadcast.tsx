@@ -16,6 +16,7 @@ interface Channel {
   is_live: boolean;
   hls_url: string | null;
   logo_url: string | null;
+  schedule_active: boolean;
 }
 
 interface CurrentProgram {
@@ -165,7 +166,15 @@ export default function Broadcast() {
               
               {/* Preview Area */}
               <div className="relative bg-black aspect-video flex items-center justify-center">
-                {currentProgram ? (
+                {channel?.schedule_active && currentProgram ? (
+                  <div className="text-center p-8">
+                    <Badge className="absolute top-4 right-4 bg-green-500 animate-pulse">
+                      GRILLE ACTIVE
+                    </Badge>
+                    <h3 className="text-4xl font-bold text-white mb-4">{currentProgram.title}</h3>
+                    <p className="text-white/70">Programme en cours</p>
+                  </div>
+                ) : currentProgram ? (
                   <div className="text-center p-8">
                     <h3 className="text-4xl font-bold text-white mb-4">{currentProgram.title}</h3>
                   </div>

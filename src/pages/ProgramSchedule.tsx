@@ -11,10 +11,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Video, Radio, Play, FileVideo } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, Trash2, Video, Radio, Play, FileVideo, Check, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { VideoPlayer } from '@/components/VideoPlayer';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ProgramItem {
   id: string;
@@ -46,6 +48,8 @@ export default function ProgramSchedule() {
   const [isVideosLoading, setIsVideosLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<VideoAsset | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isScheduleActive, setIsScheduleActive] = useState(false);
   const [newProgram, setNewProgram] = useState({
     title: '',
     type: 'video',
@@ -58,8 +62,50 @@ export default function ProgramSchedule() {
     if (channelId) {
       fetchPrograms();
       fetchVideos();
+      fetchScheduleStatus();
     }
   }, [channelId]);
+
+  const fetchScheduleStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('channels')
+        .select('schedule_active')
+        .eq('id', channelId)
+        .single();
+      
+      if (error) throw error;
+      setIsScheduleActive(data?.schedule_active || false);
+    } catch (error) {
+      console.error('Error fetching schedule status:', error);
+    }
+  };
+
+  const toggleScheduleActive = async () => {
+    try {
+      const newStatus = !isScheduleActive;
+      const { error } = await supabase
+        .from('channels')
+        .update({ schedule_active: newStatus })
+        .eq('id', channelId);
+      
+      if (error) throw error;
+      
+      setIsScheduleActive(newStatus);
+      toast({
+        title: newStatus ? 'Grille activée' : 'Grille désactivée',
+        description: newStatus 
+          ? 'La grille de programme est maintenant diffusée à l\'antenne'
+          : 'La diffusion de la grille est arrêtée'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le statut',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const fetchPrograms = async () => {
     try {
@@ -212,13 +258,31 @@ export default function ProgramSchedule() {
               Planifiez votre diffusion 24/7
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter un programme
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-3">
+            <Button 
+              onClick={toggleScheduleActive}
+              variant={isScheduleActive ? "default" : "outline"}
+              className="gap-2"
+            >
+              {isScheduleActive ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Grille activée
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4" />
+                  Activer la grille
+                </>
+              )}
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Ajouter un programme
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Nouveau programme</DialogTitle>
@@ -288,28 +352,57 @@ export default function ProgramSchedule() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
-        <Tabs defaultValue="programs" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="programs">Programmes</TabsTrigger>
-            <TabsTrigger value="library">Bibliothèque</TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Calendar Section */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Calendrier</CardTitle>
+              <CardDescription>
+                Sélectionnez une date pour voir la programmation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                locale={fr}
+                className="rounded-md border pointer-events-auto"
+              />
+            </CardContent>
+          </Card>
 
-          <TabsContent value="programs">
-            {isLoading ? (
-              <div className="text-center py-12">Chargement...</div>
-            ) : programs.length === 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Aucun programme</CardTitle>
-                  <CardDescription>
-                    Commencez par ajouter votre premier programme ou ajoutez des contenus depuis la bibliothèque
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ) : (
-              <Card>
+          {/* Programs for Selected Date */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>
+                Programmes du {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+              </CardTitle>
+              <CardDescription>
+                {isScheduleActive ? (
+                  <Badge variant="default" className="gap-1">
+                    <Radio className="h-3 w-3 animate-pulse" />
+                    Diffusion active
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">En attente</Badge>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-12">Chargement...</div>
+              ) : programs.filter(p => {
+                const programDate = new Date(p.start_time);
+                return programDate.toDateString() === selectedDate.toDateString();
+              }).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Aucun programme pour cette date
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -322,7 +415,10 @@ export default function ProgramSchedule() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {programs.map((program) => (
+                    {programs.filter(p => {
+                      const programDate = new Date(p.start_time);
+                      return programDate.toDateString() === selectedDate.toDateString();
+                    }).map((program) => (
                       <TableRow key={program.id}>
                         <TableCell>
                           {program.type === 'live' ? (
@@ -365,24 +461,28 @@ export default function ProgramSchedule() {
                     ))}
                   </TableBody>
                 </Table>
-              </Card>
-            )}
-          </TabsContent>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="library">
+        {/* Library Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bibliothèque Vidéo</CardTitle>
+            <CardDescription>
+              Sélectionnez des vidéos à ajouter à la grille de programme
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             {isVideosLoading ? (
               <div className="text-center py-12">Chargement...</div>
             ) : videos.length === 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Aucune vidéo</CardTitle>
-                  <CardDescription>
-                    Importez d'abord des vidéos dans la bibliothèque
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+              <div className="text-center py-8 text-muted-foreground">
+                Aucune vidéo disponible. Importez d'abord des vidéos dans la bibliothèque.
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {videos.map((video) => (
                   <Card key={video.id} className="overflow-hidden">
                     <div className="aspect-video bg-muted flex items-center justify-center">
@@ -434,8 +534,8 @@ export default function ProgramSchedule() {
                 ))}
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog open={!!previewVideo} onOpenChange={() => setPreviewVideo(null)}>
