@@ -1,16 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { Tv, LogOut, Menu, Shield } from "lucide-react";
+import { Tv, LogOut, Menu, Shield, Library, Calendar, Radio, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useUserRole } from "@/hooks/useUserRole";
 
 const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
   const { isAdmin } = useUserRole();
 
   const handleLogout = async () => {
@@ -29,45 +33,6 @@ const Header = () => {
     }
   };
 
-  const NavLinks = () => (
-    <nav className="flex flex-col md:flex-row gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          navigate("/dashboard");
-          setIsOpen(false);
-        }}
-      >
-        Chaînes
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          navigate("/library");
-          setIsOpen(false);
-        }}
-      >
-        Bibliothèque
-      </Button>
-      {isAdmin && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            navigate("/admin/activation-keys");
-            setIsOpen(false);
-          }}
-          className="gap-2"
-        >
-          <Shield className="w-4 h-4" />
-          Clés d'activation
-        </Button>
-      )}
-    </nav>
-  );
-
   return (
     <header className="border-b border-border/50 backdrop-blur-xl bg-background/80 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -81,39 +46,42 @@ const Header = () => {
           </h1>
         </div>
 
-        <div className="hidden md:flex items-center gap-2">
-          <NavLinks />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Déconnexion
-          </Button>
-        </div>
-
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild className="md:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               <Menu className="h-5 w-5" />
             </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <div className="flex flex-col gap-4 mt-8">
-              <NavLinks />
-              <Button
-                variant="ghost"
-                onClick={handleLogout}
-                className="gap-2 justify-start"
-              >
-                <LogOut className="w-4 h-4" />
-                Déconnexion
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-background z-50">
+            <DropdownMenuItem onClick={() => navigate("/dashboard")} className="gap-2 cursor-pointer">
+              <Tv className="w-4 h-4" />
+              Chaînes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/library")} className="gap-2 cursor-pointer">
+              <Library className="w-4 h-4" />
+              Bibliothèque
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/schedule/:channelId")} className="gap-2 cursor-pointer">
+              <Calendar className="w-4 h-4" />
+              Grille de programme
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/transmission/:channelId")} className="gap-2 cursor-pointer">
+              <Radio className="w-4 h-4" />
+              Transmission TNT
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => navigate("/admin/activation-keys")} className="gap-2 cursor-pointer">
+                <Shield className="w-4 h-4" />
+                Clés d'activation
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+              <LogOut className="w-4 h-4" />
+              Déconnexion
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
