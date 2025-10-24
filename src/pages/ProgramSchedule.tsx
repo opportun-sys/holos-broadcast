@@ -52,7 +52,7 @@ export default function ProgramSchedule() {
   const [isScheduleActive, setIsScheduleActive] = useState(false);
   const [newProgram, setNewProgram] = useState({
     title: '',
-    type: 'video',
+    type: 'vod',
     start_time: '',
     duration_minutes: 60,
     repeat_pattern: 'none'
@@ -178,7 +178,7 @@ export default function ProgramSchedule() {
       setIsDialogOpen(false);
       setNewProgram({
         title: '',
-        type: 'video',
+        type: 'vod',
         start_time: '',
         duration_minutes: 60,
         repeat_pattern: 'none'
@@ -232,7 +232,7 @@ export default function ProgramSchedule() {
       const { data, error } = await supabase.from('program_schedule').insert({
         channel_id: channelId,
         title: video.title,
-        type: 'video',
+        type: 'vod',
         start_time: new Date().toISOString(),
         duration_minutes: video.duration_minutes || 60,
         repeat_pattern: null,
@@ -324,7 +324,7 @@ export default function ProgramSchedule() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="video">Vidéo (VOD)</SelectItem>
+                      <SelectItem value="vod">Vidéo (VOD)</SelectItem>
                       <SelectItem value="live">Direct (RTMP)</SelectItem>
                     </SelectContent>
                   </Select>
