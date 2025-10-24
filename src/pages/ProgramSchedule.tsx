@@ -72,10 +72,10 @@ export default function ProgramSchedule() {
         .from('channels')
         .select('schedule_active')
         .eq('id', channelId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
-      setIsScheduleActive(data?.schedule_active || false);
+      setIsScheduleActive((data as any)?.schedule_active || false);
     } catch (error) {
       console.error('Error fetching schedule status:', error);
     }
@@ -86,7 +86,7 @@ export default function ProgramSchedule() {
       const newStatus = !isScheduleActive;
       const { error } = await supabase
         .from('channels')
-        .update({ schedule_active: newStatus })
+        .update({ schedule_active: newStatus } as any)
         .eq('id', channelId);
       
       if (error) throw error;

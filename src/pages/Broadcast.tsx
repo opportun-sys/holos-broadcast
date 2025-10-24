@@ -88,7 +88,10 @@ export default function Broadcast() {
         .single();
 
       if (error) throw error;
-      setChannel(data);
+      setChannel({
+        ...data,
+        schedule_active: (data as any).schedule_active || false
+      } as Channel);
     } catch (error) {
       toast({
         title: 'Erreur',
