@@ -217,8 +217,19 @@ export default function ProgramSchedule() {
   };
 
   const handleAddVideoToPlaylist = async (videoId: string, video: VideoAsset) => {
+    if (!channelId) {
+      toast({
+        title: 'Erreur',
+        description: 'ID de chaîne manquant',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('program_schedule').insert({
+      console.log('Adding video to playlist:', { videoId, channelId, video });
+      
+      const { data, error } = await supabase.from('program_schedule').insert({
         channel_id: channelId,
         title: video.title,
         type: 'video',
@@ -226,20 +237,26 @@ export default function ProgramSchedule() {
         duration_minutes: video.duration_minutes || 60,
         repeat_pattern: null,
         asset_id: videoId
-      });
+      }).select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding video to playlist:', error);
+        throw error;
+      }
+
+      console.log('Video added successfully:', data);
 
       toast({
         title: 'Succès',
-        description: 'Vidéo ajoutée à la playlist'
+        description: `"${video.title}" ajoutée à la grille`
       });
 
       fetchPrograms();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Failed to add video:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'ajouter la vidéo',
+        description: error.message || 'Impossible d\'ajouter la vidéo',
         variant: 'destructive'
       });
     }
