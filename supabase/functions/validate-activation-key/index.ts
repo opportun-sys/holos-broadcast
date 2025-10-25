@@ -56,18 +56,29 @@ Deno.serve(async (req) => {
     }
 
     // Key is valid - update usage and activation info
+    const { data: currentKey, error: fetchError } = await supabase
+      .from('activation_keys')
+      .select('usage_count, activated_at, machine_id')
+      .eq('id', result.key_id)
+      .single();
+
+    if (fetchError) {
+      console.error('Fetch error:', fetchError);
+      throw fetchError;
+    }
+
     const updateData: any = {
-      usage_count: result.usage_count + 1,
+      usage_count: (currentKey.usage_count || 0) + 1,
       ip_address: ipAddress || null,
     };
 
     // If this is the first activation, set activated_at
-    if (!result.activated_at) {
+    if (!currentKey.activated_at) {
       updateData.activated_at = new Date().toISOString();
     }
 
     // If machine_id is provided and not set, lock the key to this machine
-    if (machineId && !result.machine_id) {
+    if (machineId && !currentKey.machine_id) {
       updateData.machine_id = machineId;
     }
 

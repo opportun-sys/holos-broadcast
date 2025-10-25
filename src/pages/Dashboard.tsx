@@ -37,6 +37,11 @@ const Dashboard = () => {
       if (error) throw error;
 
       setChannels(data || []);
+
+      // Store the first channel ID for navigation from header
+      if (data && data.length > 0) {
+        sessionStorage.setItem('lastChannelId', data[0].id);
+      }
     } catch (error) {
       console.error("Error loading channels:", error);
     } finally {

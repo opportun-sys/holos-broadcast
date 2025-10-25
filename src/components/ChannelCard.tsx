@@ -16,6 +16,11 @@ interface ChannelCardProps {
 const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: ChannelCardProps) => {
   const navigate = useNavigate();
 
+  const handleNavigate = (path: string) => {
+    sessionStorage.setItem('lastChannelId', id);
+    navigate(path);
+  };
+
   const getStatusBadge = () => {
     if (isLive) {
       return (
@@ -67,7 +72,7 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/broadcast/${id}`)}
+            onClick={() => handleNavigate(`/broadcast/${id}`)}
           >
             <Play className="h-4 w-4 mr-1" />
             Antenne
@@ -75,7 +80,7 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/schedule/${id}`)}
+            onClick={() => handleNavigate(`/schedule/${id}`)}
           >
             <Settings className="h-4 w-4 mr-1" />
             Grille
@@ -83,7 +88,7 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/transmission/${id}`)}
+            onClick={() => handleNavigate(`/transmission/${id}`)}
           >
             <Radio className="h-4 w-4 mr-1" />
             TNT
@@ -91,7 +96,7 @@ const ChannelCard = ({ id, name, description, status, isLive, logoUrl }: Channel
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/embed-settings/${id}`)}
+            onClick={() => handleNavigate(`/embed-settings/${id}`)}
           >
             <Tv className="h-4 w-4 mr-1" />
             Embed

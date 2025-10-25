@@ -52,7 +52,7 @@ const Header = () => {
               <Menu className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-background z-50">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={() => navigate("/dashboard")} className="gap-2 cursor-pointer">
               <Tv className="w-4 h-4" />
               Chaînes
@@ -61,11 +61,31 @@ const Header = () => {
               <Library className="w-4 h-4" />
               Bibliothèque
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/schedule/:channelId")} className="gap-2 cursor-pointer">
+            <DropdownMenuItem 
+              onClick={() => {
+                const firstChannel = sessionStorage.getItem('lastChannelId');
+                if (firstChannel) {
+                  navigate(`/schedule/${firstChannel}`);
+                } else {
+                  navigate("/dashboard");
+                }
+              }} 
+              className="gap-2 cursor-pointer"
+            >
               <Calendar className="w-4 h-4" />
               Grille de programme
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/transmission/:channelId")} className="gap-2 cursor-pointer">
+            <DropdownMenuItem 
+              onClick={() => {
+                const firstChannel = sessionStorage.getItem('lastChannelId');
+                if (firstChannel) {
+                  navigate(`/transmission/${firstChannel}`);
+                } else {
+                  navigate("/dashboard");
+                }
+              }} 
+              className="gap-2 cursor-pointer"
+            >
               <Radio className="w-4 h-4" />
               Transmission TNT
             </DropdownMenuItem>
