@@ -24,6 +24,8 @@ interface CurrentProgram {
   type: string;
   start_time: string;
   duration_minutes: number;
+  asset_id: string | null;
+  video_url?: string | null;
 }
 
 export default function Broadcast() {
@@ -109,7 +111,12 @@ export default function Broadcast() {
       
       const { data, error } = await supabase
         .from('program_schedule')
-        .select('*')
+        .select(`
+          *,
+          video_assets (
+            file_url
+          )
+        `)
         .eq('channel_id', channelId)
         .lte('start_time', now)
         .order('start_time', { ascending: false })
@@ -118,9 +125,18 @@ export default function Broadcast() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setCurrentProgram(data[0]);
+        const currentProgramData = {
+          ...data[0],
+          video_url: (data[0] as any).video_assets?.file_url || null
+        };
+        setCurrentProgram(currentProgramData);
+        
         if (data.length > 1) {
-          setNextProgram(data[1]);
+          const nextProgramData = {
+            ...data[1],
+            video_url: (data[1] as any).video_assets?.file_url || null
+          };
+          setNextProgram(nextProgramData);
         }
       }
     } catch (error) {
@@ -169,17 +185,25 @@ export default function Broadcast() {
               
               {/* Preview Area */}
               <div className="relative bg-black aspect-video flex items-center justify-center">
-                {channel?.schedule_active && currentProgram ? (
-                  <div className="text-center p-8">
-                    <Badge className="absolute top-4 right-4 bg-green-500 animate-pulse">
-                      GRILLE ACTIVE
-                    </Badge>
-                    <h3 className="text-4xl font-bold text-white mb-4">{currentProgram.title}</h3>
-                    <p className="text-white/70">Programme en cours</p>
-                  </div>
+                {currentProgram?.video_url ? (
+                  <>
+                    <VideoPlayer 
+                      src={currentProgram.video_url}
+                      autoplay={false}
+                      className="w-full h-full"
+                    />
+                    {channel?.schedule_active && (
+                      <Badge className="absolute top-4 right-4 bg-green-500 animate-pulse">
+                        GRILLE ACTIVE
+                      </Badge>
+                    )}
+                  </>
                 ) : currentProgram ? (
                   <div className="text-center p-8">
                     <h3 className="text-4xl font-bold text-white mb-4">{currentProgram.title}</h3>
+                    <p className="text-white/70">
+                      {currentProgram.type === 'live' ? 'Direct RTMP' : 'Aucune vidéo'}
+                    </p>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -202,11 +226,38 @@ export default function Broadcast() {
 
               {/* Action Buttons */}
               <div className="p-4 border-b border-border flex gap-3">
-                <Button variant="outline" className="flex-1">
-                  Prévisualiser
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  Supprimer
+                <Button 
+                  variant={channel?.schedule_active ? "default" : "outline"}
+                  className="flex-1 gap-2"
+                  onClick={async () => {
+                    try {
+                      const newStatus = !channel?.schedule_active;
+                      const { error } = await supabase
+                        .from('channels')
+                        .update({ schedule_active: newStatus } as any)
+                        .eq('id', channelId);
+                      
+                      if (error) throw error;
+                      
+                      toast({
+                        title: newStatus ? 'Programme envoyé à l\'antenne' : 'Diffusion arrêtée',
+                        description: newStatus 
+                          ? 'La playlist est maintenant diffusée en direct'
+                          : 'La diffusion de la playlist est arrêtée'
+                      });
+                      
+                      await fetchChannelData();
+                    } catch (error) {
+                      toast({
+                        title: 'Erreur',
+                        description: 'Impossible de modifier la diffusion',
+                        variant: 'destructive'
+                      });
+                    }
+                  }}
+                >
+                  <Play className="h-4 w-4" />
+                  {channel?.schedule_active ? 'Diffusion en cours' : 'Envoyer à l\'antenne'}
                 </Button>
               </div>
 
