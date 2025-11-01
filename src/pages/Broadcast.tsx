@@ -173,11 +173,68 @@ export default function Broadcast() {
       <Header />
       
       <div className="container-fluid px-6 py-4">
-        {/* Three Column Layout */}
-        <div className="grid grid-cols-12 gap-4 h-[calc(100vh-120px)]">
+        {/* Top Row - Real-time Antenna Monitor */}
+        <div className="mb-4">
+          <Card className="bg-card border-border">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-xl font-bold text-foreground">ANTENNE EN TEMPS RÉEL</h2>
+              <div className="flex items-center gap-4">
+                {channel?.schedule_active && (
+                  <Badge className="bg-red-500 animate-pulse">
+                    <Radio className="h-3 w-3 mr-1" />
+                    DIFFUSION EN COURS
+                  </Badge>
+                )}
+                <div className="text-xl font-mono text-foreground">
+                  {currentTime.toLocaleTimeString('fr-FR')}
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative">
+              {channel?.hls_url && channel?.schedule_active ? (
+                <VideoPlayer 
+                  src={channel.hls_url}
+                  poster={channel.logo_url || undefined}
+                  autoplay={true}
+                  className="w-full aspect-video"
+                />
+              ) : (
+                <div className="aspect-video bg-black flex items-center justify-center">
+                  <div className="text-center">
+                    <Radio className="h-24 w-24 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-xl text-muted-foreground">
+                      {channel?.schedule_active ? 'En attente du flux...' : 'Aucune diffusion active'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {currentProgram && channel?.schedule_active && (
+              <div className="p-4 border-t border-border bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{currentProgram.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(currentProgram.start_time).toLocaleTimeString('fr-FR')} - 
+                      Durée: {currentProgram.duration_minutes} min
+                    </p>
+                  </div>
+                  <Badge variant="secondary">
+                    {currentProgram.type === 'live' ? 'LIVE RTMP' : 'VOD'}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-12 gap-4 h-[calc(100vh-380px)]">
           
           {/* Left Column - PROGRAM (Playlist) */}
-          <div className="col-span-4 flex flex-col gap-4">
+          <div className="col-span-6 flex flex-col gap-4">
             <Card className="flex-1 bg-card border-border">
               <div className="p-4 border-b border-border">
                 <h2 className="text-xl font-bold text-foreground">PROGRAM (Playlist)</h2>
@@ -305,104 +362,52 @@ export default function Broadcast() {
             </Card>
           </div>
 
-          {/* Center Column - Controls */}
-          <div className="col-span-4 flex flex-col gap-4 items-center justify-start pt-8">
-            {/* Title/Text Button */}
-            <Card className="w-48 h-48 bg-card border-border flex items-center justify-center cursor-pointer hover:bg-muted transition-smooth">
-              <Type className="h-24 w-24 text-foreground" />
-            </Card>
-
-            {/* Control Buttons Row */}
-            <div className="flex gap-3">
-              <Button size="lg" variant="outline" className="w-20 h-20 text-2xl font-bold">
-                C
-              </Button>
-              <Button size="lg" variant="outline" className="w-20 h-20">
-                <Pause className="h-8 w-8" />
-              </Button>
-            </div>
-
-            {/* Dissolve Button */}
-            <Button variant="secondary" size="lg" className="px-8">
-              Dissolve
-            </Button>
-
-            {/* Streams List */}
-            <Card className="w-full max-w-md mt-8 bg-card border-border">
-              <div className="p-4 border-b border-border">
-                <h3 className="text-xl font-bold">Streams</h3>
-              </div>
-              <div className="p-4 space-y-3">
-                {currentProgram && (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-foreground">{currentProgram.title}</span>
-                    <Badge className="w-fit bg-yellow-500 text-black">LIVE</Badge>
-                  </div>
-                )}
-                {nextProgram && (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-muted-foreground">{nextProgram.title}</span>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* Right Column - LIVE (Antenne) */}
-          <div className="col-span-4 flex flex-col gap-4">
+          {/* Right Column - LIVE (Antenne) Preview */}
+          <div className="col-span-6 flex flex-col gap-4">
             <Card className="flex-1 bg-card border-border">
               <div className="p-4 border-b border-border flex items-center justify-between">
-                <h2 className="text-xl font-bold text-foreground">LIVE (Antenne)</h2>
-                <div className="text-xl font-mono text-foreground">
-                  {currentTime.toLocaleTimeString('fr-FR')}
-                </div>
+                <h2 className="text-xl font-bold text-foreground">PREVIEW PROGRAMME</h2>
               </div>
 
-              {/* Live Preview */}
+              {/* Preview Player */}
               <div className="relative">
-                {channel.hls_url ? (
+                {currentProgram?.video_url ? (
                   <VideoPlayer 
-                    src={channel.hls_url}
-                    poster={channel.logo_url || undefined}
-                    autoplay={channel.is_live}
+                    src={currentProgram.video_url}
+                    autoplay={false}
                     className="w-full aspect-video"
                   />
+                ) : currentProgram ? (
+                  <div className="aspect-video bg-black flex items-center justify-center">
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold text-white mb-2">{currentProgram.title}</h3>
+                      <p className="text-white/70">
+                        {currentProgram.type === 'live' ? 'Direct RTMP' : 'Aucune vidéo'}
+                      </p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="aspect-video bg-black flex items-center justify-center">
                     <div className="text-center">
                       <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        Aucun flux actif
-                      </p>
+                      <p className="text-muted-foreground">Aucun programme</p>
                     </div>
                   </div>
                 )}
-                {channel.is_live && (
-                  <Badge className="absolute top-4 right-4 bg-red-500 shadow-live">
-                    <Radio className="h-3 w-3 mr-1 animate-pulse" />
-                    EN DIRECT
-                  </Badge>
-                )}
               </div>
 
-              {/* Live Controls */}
+              {/* Controls */}
               <div className="p-4 border-t border-border">
                 <div className="flex items-center justify-end gap-4">
-                  {!channel.is_live ? (
-                    <Button 
-                      onClick={handleStartStream}
-                      disabled={isStartingStream}
-                      className="gap-2"
-                      size="lg"
-                    >
-                      <Play className="h-5 w-5" />
-                      {isStartingStream ? "Démarrage..." : "Forcer le direct"}
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="lg">
-                      Forcer le direct
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={handleStartStream}
+                    disabled={isStartingStream}
+                    className="gap-2"
+                    size="lg"
+                  >
+                    <Play className="h-5 w-5" />
+                    {isStartingStream ? "Démarrage..." : "Configurer le flux"}
+                  </Button>
                 </div>
               </div>
             </Card>
