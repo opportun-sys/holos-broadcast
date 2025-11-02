@@ -50,7 +50,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Stream Monitor] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -103,7 +103,7 @@ async function getLogs(supabase: any, channelId: string, filters: any = {}) {
     .order('started_at', { ascending: false });
 
   if (sessions && sessions.length > 0) {
-    playlistLogsQuery = playlistLogsQuery.in('session_id', sessions.map(s => s.id));
+    playlistLogsQuery = playlistLogsQuery.in('session_id', sessions.map((s: any) => s.id));
   }
 
   const { data: playlistLogs } = await playlistLogsQuery.limit(limit);
@@ -148,7 +148,7 @@ async function getStats(supabase: any, channelId: string) {
     .eq('channel_id', channelId);
 
   let totalStreamingMinutes = 0;
-  sessions?.forEach(session => {
+  sessions?.forEach((session: any) => {
     if (session.started_at) {
       const start = new Date(session.started_at).getTime();
       const end = session.status === 'active' 
@@ -163,7 +163,7 @@ async function getStats(supabase: any, channelId: string) {
     .from('playlist_execution_logs')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'completed')
-    .in('session_id', sessions?.map(s => s.id) || []);
+    .in('session_id', sessions?.map((s: any) => s.id) || []);
 
   // Get error count
   const { count: errorCount } = await supabase

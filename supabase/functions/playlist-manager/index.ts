@@ -50,7 +50,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Playlist Manager] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -83,16 +83,16 @@ async function getPlaylist(supabase: any, channelId: string) {
   }
 
   // Separate current, past, and future programs
-  const currentProgram = programs.find(p => 
+  const currentProgram = programs.find((p: any) => 
     new Date(p.start_time) <= new Date(now) &&
     new Date(p.start_time).getTime() + (p.duration_minutes * 60 * 1000) > new Date(now).getTime()
   );
 
-  const pastPrograms = programs.filter(p => 
+  const pastPrograms = programs.filter((p: any) => 
     new Date(p.start_time).getTime() + (p.duration_minutes * 60 * 1000) <= new Date(now).getTime()
   );
 
-  const upcomingPrograms = programs.filter(p => 
+  const upcomingPrograms = programs.filter((p: any) => 
     new Date(p.start_time) > new Date(now)
   );
 
@@ -228,12 +228,12 @@ async function getFullSchedule(supabase: any, channelId: string) {
   const { data: logs } = await supabase
     .from('playlist_execution_logs')
     .select('*')
-    .in('program_id', programs.map(p => p.id))
+    .in('program_id', programs.map((p: any) => p.id))
     .order('started_at', { ascending: false });
 
   // Enhance programs with execution history
-  const enhancedPrograms = programs.map(program => {
-    const programLogs = logs?.filter(l => l.program_id === program.id) || [];
+  const enhancedPrograms = programs.map((program: any) => {
+    const programLogs = logs?.filter((l: any) => l.program_id === program.id) || [];
     return {
       ...program,
       execution_count: programLogs.length,

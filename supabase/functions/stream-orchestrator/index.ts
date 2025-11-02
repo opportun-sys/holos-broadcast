@@ -81,7 +81,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Stream Orchestrator] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -105,31 +105,65 @@ async function startStream(supabase: any, channelId: string, outputConfig?: any)
   const program = currentProgram?.[0];
   console.log('[startStream] Current program:', program);
 
-  // Create or update streaming session
-  const { data: session, error: sessionError } = await supabase
+  // Check if session exists for this channel
+  const { data: existingSession } = await supabase
     .from('streaming_sessions')
-    .upsert({
-      channel_id: channelId,
-      status: 'active',
-      source_type: program?.type || 'playlist',
-      current_program_id: program?.program_id,
-      started_at: new Date().toISOString(),
-      last_heartbeat: new Date().toISOString(),
-      metadata: {
-        program_title: program?.title,
-        program_type: program?.type,
-        video_url: program?.video_url
-      }
-    }, {
-      onConflict: 'channel_id',
-      ignoreDuplicates: false
-    })
-    .select()
-    .single();
+    .select('id')
+    .eq('channel_id', channelId)
+    .maybeSingle();
 
-  if (sessionError) {
-    console.error('[startStream] Session error:', sessionError);
-    throw new Error('Failed to create session');
+  let session;
+  
+  if (existingSession) {
+    // Update existing session
+    const { data: updatedSession, error: updateError } = await supabase
+      .from('streaming_sessions')
+      .update({
+        status: 'active',
+        source_type: program?.type || 'playlist',
+        current_program_id: program?.program_id,
+        started_at: new Date().toISOString(),
+        last_heartbeat: new Date().toISOString(),
+        metadata: {
+          program_title: program?.title,
+          program_type: program?.type,
+          video_url: program?.video_url
+        }
+      })
+      .eq('id', existingSession.id)
+      .select()
+      .single();
+    
+    if (updateError) {
+      console.error('[startStream] Update error:', updateError);
+      throw new Error('Failed to update session');
+    }
+    session = updatedSession;
+  } else {
+    // Create new session
+    const { data: newSession, error: insertError } = await supabase
+      .from('streaming_sessions')
+      .insert({
+        channel_id: channelId,
+        status: 'active',
+        source_type: program?.type || 'playlist',
+        current_program_id: program?.program_id,
+        started_at: new Date().toISOString(),
+        last_heartbeat: new Date().toISOString(),
+        metadata: {
+          program_title: program?.title,
+          program_type: program?.type,
+          video_url: program?.video_url
+        }
+      })
+      .select()
+      .single();
+    
+    if (insertError) {
+      console.error('[startStream] Insert error:', insertError);
+      throw new Error('Failed to create session');
+    }
+    session = newSession;
   }
 
   // Update channel status

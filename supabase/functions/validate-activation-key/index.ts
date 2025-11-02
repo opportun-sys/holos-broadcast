@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     // Link the key to the user
     await supabase
       .from('activation_keys')
-      .update({ user_id: authData.user.id })
+      .update({ user_id: authData.user?.id })
       .eq('id', result.key_id);
 
     console.log('Key activated successfully');
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error validating activation key:', error);
     return new Response(
-      JSON.stringify({ success: false, message: error.message }),
+      JSON.stringify({ success: false, message: error instanceof Error ? error.message : 'Unknown error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
