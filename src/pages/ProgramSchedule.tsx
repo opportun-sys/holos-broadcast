@@ -277,6 +277,53 @@ export default function ProgramSchedule() {
           </div>
           <div className="flex gap-3">
             <Button 
+              onClick={async () => {
+                try {
+                  // Activer le schedule
+                  const { error: scheduleError } = await supabase
+                    .from('channels')
+                    .update({ schedule_active: true } as any)
+                    .eq('id', channelId);
+                  
+                  if (scheduleError) throw scheduleError;
+                  
+                  // Démarrer le stream orchestrator
+                  const { error: streamError } = await supabase.functions.invoke('stream-orchestrator', {
+                    body: { 
+                      channelId,
+                      action: 'start',
+                      outputConfig: {
+                        protocol: 'hls',
+                        targetUrl: `https://media-plus.app/streams/${channelId}/master.m3u8`
+                      }
+                    }
+                  });
+                  
+                  if (streamError) throw streamError;
+                  
+                  setIsScheduleActive(true);
+                  toast({
+                    title: 'Playlist envoyée',
+                    description: 'La grille de programme est maintenant active et prête à être diffusée à l\'antenne',
+                  });
+                  
+                  // Rediriger vers la page Broadcast
+                  window.location.href = `/broadcast/${channelId}`;
+                } catch (error) {
+                  toast({
+                    title: 'Erreur',
+                    description: 'Impossible d\'envoyer la playlist',
+                    variant: 'destructive'
+                  });
+                }
+              }}
+              variant="default"
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            >
+              <Play className="h-4 w-4" />
+              Envoyer à l'antenne
+            </Button>
+            <Button 
               onClick={toggleScheduleActive}
               variant={isScheduleActive ? "default" : "outline"}
               className="gap-2"
