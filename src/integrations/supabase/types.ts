@@ -116,6 +116,54 @@ export type Database = {
         }
         Relationships: []
       }
+      playlist_execution_logs: {
+        Row: {
+          duration_seconds: number | null
+          ended_at: string | null
+          error_message: string | null
+          id: string
+          program_id: string | null
+          session_id: string | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          id?: string
+          program_id?: string | null
+          session_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          id?: string
+          program_id?: string | null
+          session_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_execution_logs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "program_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playlist_execution_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "streaming_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_schedule: {
         Row: {
           asset_id: string | null
@@ -156,6 +204,132 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stream_outputs: {
+        Row: {
+          bitrate_kbps: number | null
+          channel_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_status: string | null
+          protocol: string
+          quality_profile: string | null
+          resolution: string | null
+          session_id: string | null
+          target_url: string
+          updated_at: string | null
+        }
+        Insert: {
+          bitrate_kbps?: number | null
+          channel_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_status?: string | null
+          protocol: string
+          quality_profile?: string | null
+          resolution?: string | null
+          session_id?: string | null
+          target_url: string
+          updated_at?: string | null
+        }
+        Update: {
+          bitrate_kbps?: number | null
+          channel_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_status?: string | null
+          protocol?: string
+          quality_profile?: string | null
+          resolution?: string | null
+          session_id?: string | null
+          target_url?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stream_outputs_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stream_outputs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "streaming_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      streaming_sessions: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          current_program_id: string | null
+          error_message: string | null
+          hls_manifest_url: string | null
+          id: string
+          last_heartbeat: string | null
+          metadata: Json | null
+          playlist_position: number | null
+          source_type: string | null
+          started_at: string | null
+          status: string
+          stream_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          current_program_id?: string | null
+          error_message?: string | null
+          hls_manifest_url?: string | null
+          id?: string
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          playlist_position?: number | null
+          source_type?: string | null
+          started_at?: string | null
+          status?: string
+          stream_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          current_program_id?: string | null
+          error_message?: string | null
+          hls_manifest_url?: string | null
+          id?: string
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          playlist_position?: number | null
+          source_type?: string | null
+          started_at?: string | null
+          status?: string
+          stream_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streaming_sessions_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "streaming_sessions_current_program_id_fkey"
+            columns: ["current_program_id"]
+            isOneToOne: false
+            referencedRelation: "program_schedule"
             referencedColumns: ["id"]
           },
         ]
@@ -276,12 +450,72 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          channel_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       generate_activation_key: { Args: never; Returns: string }
+      get_current_program: {
+        Args: { p_channel_id: string }
+        Returns: {
+          duration_minutes: number
+          program_id: string
+          start_time: string
+          title: string
+          type: string
+          video_url: string
+        }[]
+      }
+      get_next_program: {
+        Args: { p_channel_id: string }
+        Returns: {
+          duration_minutes: number
+          program_id: string
+          start_time: string
+          title: string
+          type: string
+          video_url: string
+        }[]
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]

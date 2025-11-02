@@ -13,6 +13,7 @@ import TNTTransmission from "./pages/TNTTransmission";
 import EmbedSettings from "./pages/EmbedSettings";
 import EmbedPlayer from "./pages/EmbedPlayer";
 import ActivationKeysAdmin from "./pages/ActivationKeysAdmin";
+import StreamMonitor from "./pages/StreamMonitor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/embed-settings/:channelId" element={<EmbedSettings />} />
           <Route path="/embed/:channelId" element={<EmbedPlayer />} />
           <Route path="/admin/activation-keys" element={<ActivationKeysAdmin />} />
+          <Route path="/monitor/:channelId" element={<StreamMonitor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

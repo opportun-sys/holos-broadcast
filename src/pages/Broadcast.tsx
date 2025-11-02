@@ -42,19 +42,26 @@ export default function Broadcast() {
     
     setIsStartingStream(true);
     try {
-      const { data, error } = await supabase.functions.invoke('stream-playlist', {
-        body: { channelId }
+      const { data, error } = await supabase.functions.invoke('stream-orchestrator', {
+        body: { 
+          channelId,
+          action: 'start',
+          outputConfig: {
+            protocol: 'hls',
+            targetUrl: `https://media-plus.app/streams/${channelId}/master.m3u8`
+          }
+        }
       });
 
       if (error) throw error;
 
       toast({
         title: "Flux démarré",
-        description: `Playlist en direct créée avec ${data.playlist?.length || 0} vidéos`,
+        description: "Le streaming est maintenant actif",
       });
 
-      // Refresh channel data to get new HLS URL
       await fetchChannelData();
+      await fetchCurrentProgram();
     } catch (error) {
       console.error('Error starting stream:', error);
       toast({
@@ -64,6 +71,35 @@ export default function Broadcast() {
       });
     } finally {
       setIsStartingStream(false);
+    }
+  };
+
+  const handleStopStream = async () => {
+    if (!channelId) return;
+    
+    try {
+      const { error } = await supabase.functions.invoke('stream-orchestrator', {
+        body: { 
+          channelId,
+          action: 'stop'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Flux arrêté",
+        description: "Le streaming a été arrêté",
+      });
+
+      await fetchChannelData();
+    } catch (error) {
+      console.error('Error stopping stream:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'arrêter le flux",
+        variant: "destructive"
+      });
     }
   };
 
