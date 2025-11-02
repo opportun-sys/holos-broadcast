@@ -93,17 +93,40 @@ serve(async (req) => {
 async function startStream(supabase: any, channelId: string, outputConfig?: any) {
   console.log(`[startStream] Starting stream for channel: ${channelId}`);
 
-  // Get current program
-  const { data: currentProgram, error: programError } = await supabase
-    .rpc('get_current_program', { p_channel_id: channelId });
+  // Get next scheduled program (including future programs)
+  const { data: programs, error: programError } = await supabase
+    .from('program_schedule')
+    .select(`
+      id,
+      title,
+      type,
+      start_time,
+      duration_minutes,
+      asset_id,
+      video_assets (
+        file_url
+      )
+    `)
+    .eq('channel_id', channelId)
+    .order('start_time', { ascending: true })
+    .limit(1);
 
   if (programError) {
     console.error('[startStream] Error fetching program:', programError);
-    throw new Error('Failed to fetch current program');
+    throw new Error('Failed to fetch program');
   }
 
-  const program = currentProgram?.[0];
-  console.log('[startStream] Current program:', program);
+  const programData = programs?.[0];
+  const program = programData ? {
+    program_id: programData.id,
+    title: programData.title,
+    type: programData.type,
+    start_time: programData.start_time,
+    duration_minutes: programData.duration_minutes,
+    video_url: programData.video_assets?.file_url
+  } : null;
+  
+  console.log('[startStream] Next program:', program);
 
   // Check if session exists for this channel
   const { data: existingSession } = await supabase
