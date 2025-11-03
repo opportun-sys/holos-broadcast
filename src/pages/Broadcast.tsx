@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Radio, Play, Square, Tv } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { SimpleVideoPlayer } from '@/components/SimpleVideoPlayer';
 import { Progress } from '@/components/ui/progress';
 
 interface Channel {
@@ -45,7 +44,7 @@ export default function Broadcast() {
     
     setIsPlaying(true);
     try {
-      const { data, error } = await supabase.functions.invoke('playlist-automation', {
+      const { data, error } = await supabase.functions.invoke('stream-orchestrator', {
         body: { 
           channelId,
           action: 'start'
@@ -56,7 +55,7 @@ export default function Broadcast() {
 
       toast({
         title: "Lecture démarrée",
-        description: "La playlist est maintenant en lecture automatique",
+        description: "Le contenu est maintenant en lecture",
       });
 
       await fetchChannelData();
@@ -77,7 +76,7 @@ export default function Broadcast() {
     
     setIsPlaying(false);
     try {
-      const { error } = await supabase.functions.invoke('playlist-automation', {
+      const { error } = await supabase.functions.invoke('stream-orchestrator', {
         body: { 
           channelId,
           action: 'stop'
@@ -88,7 +87,7 @@ export default function Broadcast() {
 
       toast({
         title: "Lecture arrêtée",
-        description: "La playlist a été mise en pause",
+        description: "Le contenu a été mis en pause",
       });
 
       await fetchChannelData();
@@ -309,7 +308,7 @@ export default function Broadcast() {
             
             <div className="relative">
               {channel?.hls_url && channel?.schedule_active ? (
-                <SimpleVideoPlayer 
+                <VideoPlayer 
                   src={channel.hls_url}
                   poster={channel.logo_url || undefined}
                   autoplay={true}
