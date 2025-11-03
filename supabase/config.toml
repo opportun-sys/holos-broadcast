@@ -1,5 +1,8 @@
 project_id = "kcnrnietrmaldtlltfpp"
 
+[functions.playlist-automation]
+verify_jwt = true
+
 [functions.stream-playlist]
 verify_jwt = false
 
