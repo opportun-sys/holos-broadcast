@@ -200,6 +200,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "program_schedule_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "video_assets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "program_schedule_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
