@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.generate-activation-key]
 verify_jwt = false
+
+[functions.ffmpeg-cloud]
+verify_jwt = true
+
+[functions.ffmpeg-webhook]
+verify_jwt = false

@@ -9,6 +9,8 @@ import { Radio, Play, Square, Tv } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { Progress } from '@/components/ui/progress';
+import { StreamLinks } from '@/components/StreamLinks';
+import { TNTTransmission } from '@/components/TNTTransmission';
 
 interface Channel {
   id: string;
@@ -547,6 +549,15 @@ export default function Broadcast() {
               </div>
             </Card>
           </div>
+        </div>
+
+        {/* Bottom Row - Stream Links and TNT Transmission */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <StreamLinks 
+            channelId={channelId!}
+            hlsUrl={channel?.hls_url || undefined}
+          />
+          <TNTTransmission channelId={channelId!} />
         </div>
       </div>
     </div>
