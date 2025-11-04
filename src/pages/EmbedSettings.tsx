@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Code, Copy, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { StreamLinks } from '@/components/StreamLinks';
 
 interface Channel {
   id: string;
@@ -18,6 +19,7 @@ interface Channel {
   embed_show_guide: boolean;
   embed_primary_color: string;
   allowed_domains: string[];
+  hls_url: string | null;
 }
 
 export default function EmbedSettings() {
@@ -138,6 +140,11 @@ export default function EmbedSettings() {
         </div>
 
         <div className="space-y-6">
+          <StreamLinks 
+            channelId={channelId!}
+            hlsUrl={channel?.hls_url || undefined}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

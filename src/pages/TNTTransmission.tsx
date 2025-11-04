@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Antenna, Power, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { TNTTransmission as TNTTransmissionComponent } from '@/components/TNTTransmission';
 
 interface TransmissionLog {
   id: string;
@@ -129,6 +130,10 @@ export default function TNTTransmission() {
           <p className="text-muted-foreground mt-2">
             Supervision de la sortie vers diffuseur TNT
           </p>
+        </div>
+
+        <div className="mb-6">
+          <TNTTransmissionComponent channelId={channelId!} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

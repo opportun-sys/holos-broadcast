@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Radio, Play, Square, Tv } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { VideoPlayer } from '@/components/VideoPlayer';
+import { SimpleVideoPlayer } from '@/components/SimpleVideoPlayer';
 import { Progress } from '@/components/ui/progress';
-import { StreamLinks } from '@/components/StreamLinks';
-import { TNTTransmission } from '@/components/TNTTransmission';
 
 interface Channel {
   id: string;
@@ -310,7 +309,7 @@ export default function Broadcast() {
             
             <div className="relative">
               {channel?.hls_url && channel?.schedule_active ? (
-                <VideoPlayer 
+                <SimpleVideoPlayer 
                   src={channel.hls_url}
                   poster={channel.logo_url || undefined}
                   autoplay={true}
@@ -551,14 +550,6 @@ export default function Broadcast() {
           </div>
         </div>
 
-        {/* Bottom Row - Stream Links and TNT Transmission */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <StreamLinks 
-            channelId={channelId!}
-            hlsUrl={channel?.hls_url || undefined}
-          />
-          <TNTTransmission channelId={channelId!} />
-        </div>
       </div>
     </div>
   );
