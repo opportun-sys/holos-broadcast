@@ -4,12 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Radio, Play, Square, Tv } from 'lucide-react';
+import { Radio } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { VideoPlayer } from '@/components/VideoPlayer';
 import { SimpleVideoPlayer } from '@/components/SimpleVideoPlayer';
-import { Progress } from '@/components/ui/progress';
+import { PlaylistManager } from '@/components/PlaylistManager';
 
 interface Channel {
   id: string;
@@ -37,97 +35,7 @@ export default function Broadcast() {
   const [nextProgram, setNextProgram] = useState<CurrentProgram | null>(null);
   const [playlistPrograms, setPlaylistPrograms] = useState<CurrentProgram[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  const handlePlay = async () => {
-    if (!channelId) return;
-    
-    setIsPlaying(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('stream-orchestrator', {
-        body: { 
-          channelId,
-          action: 'start'
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Lecture démarrée",
-        description: "Le contenu est maintenant en lecture",
-      });
-
-      await fetchChannelData();
-      await fetchPlaylistPrograms();
-    } catch (error) {
-      console.error('Error starting playback:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de démarrer la lecture",
-        variant: "destructive"
-      });
-      setIsPlaying(false);
-    }
-  };
-
-  const handleStop = async () => {
-    if (!channelId) return;
-    
-    setIsPlaying(false);
-    try {
-      const { error } = await supabase.functions.invoke('stream-orchestrator', {
-        body: { 
-          channelId,
-          action: 'stop'
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Lecture arrêtée",
-        description: "Le contenu a été mis en pause",
-      });
-
-      await fetchChannelData();
-    } catch (error) {
-      console.error('Error stopping playback:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'arrêter la lecture",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleCut = async () => {
-    if (!channelId) return;
-    
-    try {
-      const { error } = await supabase
-        .from('channels')
-        .update({ is_live: true, schedule_active: true })
-        .eq('id', channelId);
-      
-      if (error) throw error;
-
-      toast({
-        title: "Envoyé à l'antenne",
-        description: "Le contenu est maintenant diffusé en direct",
-      });
-
-      await fetchChannelData();
-    } catch (error) {
-      console.error('Error sending to antenna:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer à l'antenne",
-        variant: "destructive"
-      });
-    }
-  };
 
 
   useEffect(() => {
@@ -349,207 +257,47 @@ export default function Broadcast() {
         {/* Two Column Layout */}
         <div className="grid grid-cols-12 gap-4 h-[calc(100vh-380px)]">
           
-          {/* Left Column - PROGRAM (Playlist) */}
+          {/* Left Column - Playlist Manager */}
           <div className="col-span-6 flex flex-col gap-4">
-            <Card className="flex-1 bg-card border-border">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-xl font-bold text-foreground">PROGRAM (Playlist)</h2>
-              </div>
-              
-              {/* Preview Area */}
-              <div className="relative bg-black aspect-video flex items-center justify-center">
-                {currentProgram?.video_url ? (
-                  <>
-                    <VideoPlayer 
-                      src={currentProgram.video_url}
-                      autoplay={false}
-                      className="w-full h-full"
-                    />
-                    {channel?.schedule_active && (
-                      <Badge className="absolute top-4 right-4 bg-green-500 animate-pulse">
-                        GRILLE ACTIVE
-                      </Badge>
-                    )}
-                  </>
-                ) : currentProgram ? (
-                  <div className="text-center p-8">
-                    <h3 className="text-4xl font-bold text-white mb-4">{currentProgram.title}</h3>
-                    <p className="text-white/70">
-                      {currentProgram.type === 'live' ? 'Direct RTMP' : 'Aucune vidéo'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Aucun programme</p>
-                  </div>
-                )}
-              </div>
-
-              {/* VOD Progress */}
-              {currentProgram && currentProgram.type !== 'live' && (
-                <div className="p-4 border-b border-border">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">VOD</span>
-                    <Progress value={33} className="flex-1" />
-                    <span className="text-sm text-muted-foreground">0:13 / {currentProgram.duration_minutes}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Control Buttons */}
-              <div className="p-4 border-b border-border flex gap-3">
-                <Button 
-                  variant={isPlaying ? "default" : "outline"}
-                  className="flex-1 gap-2"
-                  onClick={handlePlay}
-                  disabled={isPlaying}
-                >
-                  <Play className="h-4 w-4" />
-                  Play
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={handleStop}
-                  disabled={!isPlaying}
-                >
-                  <Square className="h-4 w-4" />
-                  Stop
-                </Button>
-                <Button 
-                  variant="default"
-                  className="flex-1 gap-2"
-                  onClick={handleCut}
-                >
-                  <Tv className="h-4 w-4" />
-                  Cut
-                </Button>
-              </div>
-
-              {/* Now Playing Section - Playlist Programs */}
-              <div className="p-4 flex-1 overflow-y-auto">
-                <h3 className="text-2xl font-bold mb-4">Now</h3>
-                
-                {playlistPrograms.length > 0 ? (
-                  <div className="space-y-3">
-                    {playlistPrograms.map((program, index) => (
-                      <div 
-                        key={program.id}
-                        className={`rounded-lg p-3 ${
-                          index === 0 
-                            ? 'bg-muted/50 border-l-4 border-primary' 
-                            : 'bg-primary/10'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-lg">{program.title}</h4>
-                            <Badge variant="secondary" className="mt-1">
-                              {program.type === 'live' ? 'LIVE' : 'VOD'}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {new Date(program.start_time).toLocaleTimeString('fr-FR')} - 
-                              Durée: {program.duration_minutes} min
-                            </p>
-                          </div>
-                        </div>
-                        {index === 0 && (
-                          <>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>En cours</span>
-                            </div>
-                            <Progress value={40} className="mt-2" />
-                          </>
-                        )}
-                        {program.video_url && (
-                          <div className="mt-3">
-                            <VideoPlayer 
-                              src={program.video_url}
-                              autoplay={false}
-                              className="w-full aspect-video rounded"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Radio className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Aucun programme dans la playlist</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <PlaylistManager 
+              channelId={channelId || ''} 
+              programs={playlistPrograms}
+              onRefresh={() => {
+                fetchChannelData();
+                fetchPlaylistPrograms();
+              }}
+            />
           </div>
 
-          {/* Right Column - LIVE (Antenne) Preview */}
+          {/* Right Column - Preview */}
           <div className="col-span-6 flex flex-col gap-4">
             <Card className="flex-1 bg-card border-border">
               <div className="p-4 border-b border-border flex items-center justify-between">
                 <h2 className="text-xl font-bold text-foreground">PREVIEW PROGRAMME</h2>
               </div>
 
-              {/* Live Program Preview with Player */}
+              {/* Preview Area */}
               <div className="flex-1 flex flex-col">
-                <div className="relative flex-1">
-                  {playlistPrograms.length > 0 && playlistPrograms[0]?.video_url ? (
-                    <div className="h-full">
-                      <VideoPlayer 
-                        src={playlistPrograms[0].video_url}
-                        autoplay={isPlaying}
-                        className="w-full h-full"
-                      />
-                      {channel?.is_live && (
-                        <Badge className="absolute top-4 right-4 bg-red-500 animate-pulse">
-                          <Radio className="h-3 w-3 mr-1" />
-                          EN DIRECT
-                        </Badge>
-                      )}
-                    </div>
-                  ) : playlistPrograms.length > 0 ? (
-                    <div className="aspect-video bg-black flex items-center justify-center">
-                      <div className="text-center">
-                        <h3 className="text-2xl font-bold text-white mb-2">
-                          {playlistPrograms[0].title}
-                        </h3>
-                        <p className="text-white/70">
-                          {playlistPrograms[0].type === 'live' ? 'Direct RTMP' : 'Aucune vidéo'}
-                        </p>
-                      </div>
+                <div className="relative flex-1 bg-black flex items-center justify-center">
+                  {nextProgram ? (
+                    <div className="text-center p-8">
+                      <h3 className="text-4xl font-bold text-white mb-4">{nextProgram.title}</h3>
+                      <p className="text-white/70">Programme à venir</p>
+                      <Badge variant="secondary" className="mt-4">
+                        {nextProgram.type === 'live' ? 'LIVE' : 'VOD'}
+                      </Badge>
                     </div>
                   ) : (
-                    <div className="aspect-video bg-black flex items-center justify-center">
-                      <div className="text-center">
-                        <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">Aucun programme</p>
-                      </div>
+                    <div className="text-center">
+                      <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Aucun programme suivant</p>
                     </div>
                   )}
                 </div>
-
-                {playlistPrograms.length > 0 && (
-                  <div className="p-4 border-t border-border bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold">{playlistPrograms[0].title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(playlistPrograms[0].start_time).toLocaleTimeString('fr-FR')} - 
-                          Durée: {playlistPrograms[0].duration_minutes} min
-                        </p>
-                      </div>
-                      <Badge variant="secondary">
-                        {playlistPrograms[0].type === 'live' ? 'LIVE' : 'VOD'}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
           </div>
         </div>
-
       </div>
     </div>
   );
