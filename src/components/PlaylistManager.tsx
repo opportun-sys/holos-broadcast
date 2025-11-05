@@ -19,9 +19,11 @@ interface PlaylistManagerProps {
   channelId: string;
   programs: PlaylistProgram[];
   onRefresh: () => void;
+  onPlaylistStart?: (hlsUrl: string) => void;
+  onPlaylistStop?: () => void;
 }
 
-export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistManagerProps) => {
+export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStart, onPlaylistStop }: PlaylistManagerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -47,7 +49,7 @@ export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistMana
         duration: p.duration_minutes
       }));
 
-      const { error } = await supabase.functions.invoke('ffmpeg-cloud', {
+      const { data, error } = await supabase.functions.invoke('ffmpeg-cloud', {
         body: {
           channelId,
           action: 'start',
@@ -61,6 +63,20 @@ export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistMana
 
       setIsPlaying(true);
       setIsPaused(false);
+
+      // Get HLS URL from FFmpeg Cloud response
+      const hlsUrl = data?.hlsUrl || `https://ffmpeg-cloud.example.com/streams/${channelId}/master.m3u8`;
+      
+      // Update channel with HLS URL
+      await supabase
+        .from('channels')
+        .update({ hls_url: hlsUrl })
+        .eq('id', channelId);
+
+      // Notify parent component
+      if (onPlaylistStart) {
+        onPlaylistStart(hlsUrl);
+      }
 
       toast({
         title: 'Playlist lancée',
@@ -103,6 +119,22 @@ export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistMana
       setIsPaused(false);
       setProgress(0);
       setCurrentIndex(0);
+      setIsOnAir(false);
+
+      // Clear HLS URL from channel
+      await supabase
+        .from('channels')
+        .update({ 
+          hls_url: null,
+          is_live: false,
+          schedule_active: false
+        })
+        .eq('id', channelId);
+
+      // Notify parent component
+      if (onPlaylistStop) {
+        onPlaylistStop();
+      }
 
       toast({
         title: 'Playlist arrêtée',
@@ -132,6 +164,18 @@ export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistMana
     }
 
     try {
+      // Activate transmission via FFmpeg Cloud
+      const { error: transmitError } = await supabase.functions.invoke('ffmpeg-cloud', {
+        body: {
+          channelId,
+          action: 'transmit',
+          protocol: 'hls',
+          target: `streams/${channelId}/master.m3u8`
+        }
+      });
+
+      if (transmitError) throw transmitError;
+
       // Update channel to show playlist is on air
       const { error } = await supabase
         .from('channels')
@@ -147,7 +191,7 @@ export const PlaylistManager = ({ channelId, programs, onRefresh }: PlaylistMana
 
       toast({
         title: 'Playlist à l\'antenne',
-        description: 'Le contenu de la playlist est maintenant diffusé en direct'
+        description: 'Le contenu de la playlist est diffusé vers les liens de sortie'
       });
 
       onRefresh();

@@ -36,6 +36,8 @@ export default function Broadcast() {
   const [playlistPrograms, setPlaylistPrograms] = useState<CurrentProgram[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [playlistHlsUrl, setPlaylistHlsUrl] = useState<string | null>(null);
+  const [isPlaylistOnAir, setIsPlaylistOnAir] = useState(false);
 
 
   useEffect(() => {
@@ -216,7 +218,14 @@ export default function Broadcast() {
             </div>
             
             <div className="relative">
-              {channel?.hls_url && channel?.schedule_active ? (
+              {isPlaylistOnAir && playlistHlsUrl ? (
+                <SimpleVideoPlayer 
+                  src={playlistHlsUrl}
+                  poster={channel?.logo_url || undefined}
+                  autoplay={true}
+                  className="w-full aspect-video"
+                />
+              ) : channel?.hls_url && channel?.schedule_active ? (
                 <SimpleVideoPlayer 
                   src={channel.hls_url}
                   poster={channel.logo_url || undefined}
@@ -266,6 +275,13 @@ export default function Broadcast() {
                 fetchChannelData();
                 fetchPlaylistPrograms();
               }}
+              onPlaylistStart={(hlsUrl) => {
+                setPlaylistHlsUrl(hlsUrl);
+              }}
+              onPlaylistStop={() => {
+                setPlaylistHlsUrl(null);
+                setIsPlaylistOnAir(false);
+              }}
             />
           </div>
 
@@ -279,7 +295,13 @@ export default function Broadcast() {
               {/* Preview Area */}
               <div className="flex-1 flex flex-col">
                 <div className="relative flex-1 bg-black flex items-center justify-center">
-                  {nextProgram ? (
+                  {playlistHlsUrl && !isPlaylistOnAir ? (
+                    <SimpleVideoPlayer 
+                      src={playlistHlsUrl}
+                      autoplay={true}
+                      className="w-full h-full"
+                    />
+                  ) : nextProgram ? (
                     <div className="text-center p-8">
                       <h3 className="text-4xl font-bold text-white mb-4">{nextProgram.title}</h3>
                       <p className="text-white/70">Programme à venir</p>
@@ -290,7 +312,7 @@ export default function Broadcast() {
                   ) : (
                     <div className="text-center">
                       <Radio className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Aucun programme suivant</p>
+                      <p className="text-muted-foreground">Aucun programme de prévisualisation</p>
                     </div>
                   )}
                 </div>
