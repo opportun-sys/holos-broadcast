@@ -64,23 +64,18 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
       setIsPlaying(true);
       setIsPaused(false);
 
-      // Get HLS URL from FFmpeg Cloud response
-      const hlsUrl = data?.hlsUrl || `https://ffmpeg-cloud.example.com/streams/${channelId}/master.m3u8`;
-      
-      // Update channel with HLS URL
-      await supabase
-        .from('channels')
-        .update({ hls_url: hlsUrl })
-        .eq('id', channelId);
+      console.log('Playlist started:', data);
 
-      // Notify parent component
-      if (onPlaylistStart) {
+      // Get HLS URL from FFmpeg Cloud response
+      const hlsUrl = data?.hlsUrl;
+      
+      if (hlsUrl && onPlaylistStart) {
         onPlaylistStart(hlsUrl);
       }
 
       toast({
         title: 'Playlist lancée',
-        description: 'La playlist tourne en boucle sur FFmpeg Cloud'
+        description: 'La playlist tourne en boucle - visible dans l\'aperçu'
       });
 
       onRefresh();
@@ -152,7 +147,7 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
     }
   };
 
-  // Send playlist to antenna
+  // Send playlist to antenna (make it visible in main screen)
   const handleSendToAntenna = async () => {
     if (!isPlaying) {
       toast({
@@ -164,23 +159,10 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
     }
 
     try {
-      // Activate transmission via FFmpeg Cloud
-      const { error: transmitError } = await supabase.functions.invoke('ffmpeg-cloud', {
-        body: {
-          channelId,
-          action: 'transmit',
-          protocol: 'hls',
-          target: `streams/${channelId}/master.m3u8`
-        }
-      });
-
-      if (transmitError) throw transmitError;
-
       // Update channel to show playlist is on air
       const { error } = await supabase
         .from('channels')
         .update({ 
-          is_live: true,
           schedule_active: true 
         })
         .eq('id', channelId);
@@ -190,8 +172,8 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
       setIsOnAir(true);
 
       toast({
-        title: 'Playlist à l\'antenne',
-        description: 'Le contenu de la playlist est diffusé vers les liens de sortie'
+        title: 'Envoyé à l\'antenne',
+        description: 'La playlist est maintenant visible dans "Antenne en temps réel"'
       });
 
       onRefresh();
@@ -205,23 +187,28 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
     }
   };
 
-  // Activate antenna output
+  // Activate antenna output (activate FFmpeg Cloud transmission)
   const handleActivateOutput = async () => {
     try {
-      const { error } = await supabase.functions.invoke('ffmpeg-cloud', {
+      const { data, error } = await supabase.functions.invoke('ffmpeg-cloud', {
         body: {
           channelId,
           action: 'transmit',
-          protocol: 'hls',
-          target: `streams/${channelId}/master.m3u8`
+          transmission: {
+            protocol: 'hls',
+            target: `streams/${channelId}`
+          }
         }
       });
 
       if (error) throw error;
 
+      console.log('Transmission activated:', data);
+
       toast({
-        title: 'Sortie activée',
-        description: 'Les flux HLS sont maintenant disponibles'
+        title: 'Antenne activée',
+        description: 'Diffusion en cours - liens disponibles dans la page Chaîne',
+        duration: 5000
       });
 
       onRefresh();

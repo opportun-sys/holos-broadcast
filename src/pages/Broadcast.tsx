@@ -66,6 +66,22 @@ export default function Broadcast() {
           fetchCurrentProgram();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'channels',
+          filter: `id=eq.${channelId}`
+        },
+        (payload) => {
+          // Update on-air status when channel.schedule_active changes
+          const newData = payload.new as any;
+          if (newData.schedule_active) {
+            setIsPlaylistOnAir(true);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -225,7 +241,7 @@ export default function Broadcast() {
                   autoplay={true}
                   className="w-full aspect-video"
                 />
-              ) : channel?.hls_url && channel?.schedule_active ? (
+              ) : channel?.is_live && channel?.hls_url ? (
                 <SimpleVideoPlayer 
                   src={channel.hls_url}
                   poster={channel.logo_url || undefined}
@@ -237,7 +253,11 @@ export default function Broadcast() {
                   <div className="text-center">
                     <Radio className="h-24 w-24 text-muted-foreground mx-auto mb-4" />
                     <p className="text-xl text-muted-foreground">
-                      {channel?.schedule_active ? 'En attente du flux...' : 'Aucune diffusion active'}
+                      {playlistHlsUrl && !isPlaylistOnAir 
+                        ? 'Playlist en attente - Cliquez sur "Playlist à l\'antenne"' 
+                        : channel?.schedule_active 
+                        ? 'En attente du flux...' 
+                        : 'Aucune diffusion active'}
                     </p>
                   </div>
                 </div>
@@ -277,6 +297,7 @@ export default function Broadcast() {
               }}
               onPlaylistStart={(hlsUrl) => {
                 setPlaylistHlsUrl(hlsUrl);
+                setIsPlaylistOnAir(false); // Not on air yet, just in preview
               }}
               onPlaylistStop={() => {
                 setPlaylistHlsUrl(null);

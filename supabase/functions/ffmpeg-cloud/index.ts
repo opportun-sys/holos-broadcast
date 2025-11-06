@@ -83,13 +83,17 @@ Deno.serve(async (req) => {
 
         const startData = await ffmpegResponse.json();
 
-        // Update channel status and URLs
+        // Generate proper URLs
+        const baseUrl = Deno.env.get('FFMPEG_CLOUD_BASE_URL') || 'https://stream.media-plus.app';
+        const hlsUrl = startData.hlsUrl || `${baseUrl}/streams/${channelId}/master.m3u8`;
+        const iframeUrl = `${baseUrl}/embed/channel/${channelId}`;
+
+        // Update channel with streaming URLs (but not live yet)
         await supabase
           .from('channels')
           .update({
-            status: 'streaming',
-            is_live: true,
-            hls_url: startData.hlsUrl || `https://stream.ffmpeg.cloud/${channelId}/playlist.m3u8`,
+            status: 'ready',
+            hls_url: hlsUrl,
             updated_at: new Date().toISOString(),
           })
           .eq('id', channelId);
@@ -107,23 +111,35 @@ Deno.serve(async (req) => {
             .from('streaming_sessions')
             .insert({
               channel_id: channelId,
-              status: 'streaming',
+              status: 'ready',
               source_type: 'playlist',
-              stream_url: startData.hlsUrl,
-              hls_manifest_url: startData.hlsUrl,
+              stream_url: hlsUrl,
+              hls_manifest_url: hlsUrl,
               started_at: new Date().toISOString(),
-              metadata: { ffmpegCloudId: startData.id },
+              metadata: { ffmpegCloudId: startData.id, loop: true },
             });
+        } else {
+          await supabase
+            .from('streaming_sessions')
+            .update({
+              status: 'ready',
+              stream_url: hlsUrl,
+              hls_manifest_url: hlsUrl,
+              updated_at: new Date().toISOString(),
+              metadata: { ffmpegCloudId: startData.id, loop: true },
+            })
+            .eq('id', existingSession.id);
         }
 
-        console.log('Streaming started successfully:', startData);
+        console.log('Playlist started successfully:', { hlsUrl, iframeUrl });
         
         return new Response(
           JSON.stringify({
             success: true,
+            message: 'Playlist en cours de lecture',
+            hlsUrl,
+            iframeUrl,
             data: startData,
-            hlsUrl: startData.hlsUrl || `https://stream.ffmpeg.cloud/${channelId}/playlist.m3u8`,
-            iframeUrl: `https://stream.ffmpeg.cloud/embed/${channelId}`,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -199,11 +215,12 @@ Deno.serve(async (req) => {
       }
 
       case 'transmit': {
-        if (!transmission) {
-          throw new Error('Transmission configuration is required');
-        }
+        // Activate output transmission
+        const baseUrl = Deno.env.get('FFMPEG_CLOUD_BASE_URL') || 'https://stream.media-plus.app';
+        const protocol = transmission?.protocol || 'hls';
+        const target = transmission?.target || `streams/${channelId}`;
 
-        // Configure TNT transmission
+        // Call FFmpeg Cloud to activate transmission
         ffmpegResponse = await fetch('https://api.ffmpeg.cloud/v1/transmit', {
           method: 'POST',
           headers: {
@@ -212,8 +229,8 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             channelId,
-            protocol: transmission.protocol,
-            target: transmission.target,
+            protocol,
+            target,
           }),
         });
 
@@ -225,20 +242,70 @@ Deno.serve(async (req) => {
 
         const transmitData = await ffmpegResponse.json();
 
-        // Store transmission configuration
-        await supabase
-          .from('stream_outputs')
-          .insert({
-            channel_id: channelId,
-            protocol: transmission.protocol,
-            target_url: transmission.target,
-            is_active: true,
-          });
+        // Generate output URLs
+        const hlsUrl = `${baseUrl}/streams/${channelId}/master.m3u8`;
+        const iframeUrl = `${baseUrl}/embed/channel/${channelId}`;
 
-        console.log('Transmission configured successfully:', transmitData);
+        // Update channel to active broadcasting
+        await supabase
+          .from('channels')
+          .update({
+            status: 'streaming',
+            is_live: true,
+            schedule_active: true,
+            hls_url: hlsUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', channelId);
+
+        // Update streaming session
+        await supabase
+          .from('streaming_sessions')
+          .update({
+            status: 'streaming',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('channel_id', channelId);
+
+        // Store or update transmission output
+        const { data: existingOutput } = await supabase
+          .from('stream_outputs')
+          .select('*')
+          .eq('channel_id', channelId)
+          .eq('protocol', protocol)
+          .single();
+
+        if (!existingOutput) {
+          await supabase
+            .from('stream_outputs')
+            .insert({
+              channel_id: channelId,
+              protocol,
+              target_url: hlsUrl,
+              is_active: true,
+              last_status: 'active',
+            });
+        } else {
+          await supabase
+            .from('stream_outputs')
+            .update({
+              is_active: true,
+              last_status: 'active',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingOutput.id);
+        }
+
+        console.log('Transmission activated:', { hlsUrl, iframeUrl });
 
         return new Response(
-          JSON.stringify({ success: true, data: transmitData }),
+          JSON.stringify({ 
+            success: true, 
+            message: 'Sortie antenne activée',
+            hlsUrl,
+            iframeUrl,
+            data: transmitData 
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
