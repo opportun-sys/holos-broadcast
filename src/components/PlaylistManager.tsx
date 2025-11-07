@@ -21,9 +21,10 @@ interface PlaylistManagerProps {
   onRefresh: () => void;
   onPlaylistStart?: (hlsUrl: string) => void;
   onPlaylistStop?: () => void;
+  onPlaylistSentToAir?: () => void;
 }
 
-export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStart, onPlaylistStop }: PlaylistManagerProps) => {
+export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStart, onPlaylistStop, onPlaylistSentToAir }: PlaylistManagerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -170,6 +171,11 @@ export const PlaylistManager = ({ channelId, programs, onRefresh, onPlaylistStar
       if (error) throw error;
 
       setIsOnAir(true);
+
+      // Notify parent component immediately
+      if (onPlaylistSentToAir) {
+        onPlaylistSentToAir();
+      }
 
       toast({
         title: 'Envoyé à l\'antenne',

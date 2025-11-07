@@ -83,12 +83,12 @@ Deno.serve(async (req) => {
 
         const startData = await ffmpegResponse.json();
 
-        // Generate proper URLs
+        // Generate proper URLs for FFmpeg Cloud streaming
         const baseUrl = Deno.env.get('FFMPEG_CLOUD_BASE_URL') || 'https://stream.media-plus.app';
         const hlsUrl = startData.hlsUrl || `${baseUrl}/streams/${channelId}/master.m3u8`;
-        const iframeUrl = `${baseUrl}/embed/channel/${channelId}`;
+        const iframeUrl = startData.iframeUrl || `${baseUrl}/embed/channel/${channelId}`;
 
-        // Update channel with streaming URLs (but not live yet)
+        // Update channel with streaming URLs (status: ready means playlist is playing)
         await supabase
           .from('channels')
           .update({
@@ -242,11 +242,11 @@ Deno.serve(async (req) => {
 
         const transmitData = await ffmpegResponse.json();
 
-        // Generate output URLs
-        const hlsUrl = `${baseUrl}/streams/${channelId}/master.m3u8`;
-        const iframeUrl = `${baseUrl}/embed/channel/${channelId}`;
+        // Generate final output URLs from FFmpeg Cloud response
+        const hlsUrl = transmitData.hlsUrl || `${baseUrl}/streams/${channelId}/master.m3u8`;
+        const iframeUrl = transmitData.iframeUrl || `${baseUrl}/embed/channel/${channelId}`;
 
-        // Update channel to active broadcasting
+        // Update channel to active broadcasting (streaming = output is live)
         await supabase
           .from('channels')
           .update({

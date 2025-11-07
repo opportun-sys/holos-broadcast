@@ -303,6 +303,9 @@ export default function Broadcast() {
                 setPlaylistHlsUrl(null);
                 setIsPlaylistOnAir(false);
               }}
+              onPlaylistSentToAir={() => {
+                setIsPlaylistOnAir(true); // Immediately show on main antenna screen
+              }}
             />
           </div>
 
