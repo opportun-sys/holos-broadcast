@@ -33,35 +33,59 @@ const Auth = () => {
 
   const handleActivateKey = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const trimmedKey = activationKey.trim().toUpperCase();
+    
+    // Validate key format
+    if (!trimmedKey || trimmedKey.length < 10) {
+      toast.error("Veuillez entrer une clé d'activation valide");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log('Attempting activation with key:', trimmedKey.substring(0, 10) + '...');
       const machineId = getMachineId();
       
       const { data, error } = await supabase.functions.invoke('validate-activation-key', {
         body: {
-          key: activationKey.trim().toUpperCase(),
+          key: trimmedKey,
           machineId,
           ipAddress: null,
         },
       });
 
-      if (error) throw error;
+      console.log('Activation response:', { data, error });
 
-      if (!data.success) {
-        toast.error(data.message || "Clé d'activation invalide");
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error("Erreur de connexion au serveur. Veuillez réessayer.");
         return;
       }
 
-      if (data.session) {
-        await supabase.auth.setSession(data.session);
+      if (!data || !data.success) {
+        const errorMessage = data?.message || "Clé d'activation invalide ou expirée";
+        console.error('Validation failed:', errorMessage);
+        toast.error(errorMessage);
+        return;
       }
 
-      toast.success("Activation réussie ! Bienvenue sur Média+Broadcast");
-      navigate("/");
+      // Set session
+      if (data.session) {
+        const { error: sessionError } = await supabase.auth.setSession(data.session);
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          toast.error("Erreur lors de la création de la session");
+          return;
+        }
+      }
+
+      toast.success("✅ Activation réussie ! Bienvenue sur Média+Broadcast");
+      setTimeout(() => navigate("/"), 500);
     } catch (error: any) {
       console.error('Activation error:', error);
-      toast.error(error.message || "Erreur lors de l'activation");
+      toast.error(error.message || "Erreur inattendue lors de l'activation");
     } finally {
       setLoading(false);
     }
