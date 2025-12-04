@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Tv, LogOut, Menu, Shield, Library, Calendar, Radio, Key } from "lucide-react";
+import { Tv, LogOut, Menu, Shield, Library, Calendar, Radio, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +56,10 @@ const Header = () => {
             <DropdownMenuItem onClick={() => navigate("/dashboard")} className="gap-2 cursor-pointer">
               <Tv className="w-4 h-4" />
               Chaînes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/channels")} className="gap-2 cursor-pointer">
+              <Settings2 className="w-4 h-4" />
+              Gestion des chaînes
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/library")} className="gap-2 cursor-pointer">
               <Library className="w-4 h-4" />

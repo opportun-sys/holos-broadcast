@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import ChannelManagement from "./pages/ChannelManagement";
 import Library from "./pages/Library";
 import Broadcast from "./pages/Broadcast";
 import ProgramSchedule from "./pages/ProgramSchedule";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Navigate to="/" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/channels" element={<ChannelManagement />} />
           <Route path="/library" element={<Library />} />
           <Route path="/broadcast/:channelId" element={<Broadcast />} />
           <Route path="/schedule/:channelId" element={<ProgramSchedule />} />
