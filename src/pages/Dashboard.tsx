@@ -24,8 +24,9 @@ const Dashboard = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Si pas d'utilisateur connecté, on affiche quand même la page
       if (!user) {
-        navigate("/auth");
+        setLoading(false);
         return;
       }
 
