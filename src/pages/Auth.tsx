@@ -85,7 +85,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -101,6 +101,11 @@ const Auth = () => {
         title: "Connexion réussie",
         description: "Bienvenue sur Media+Broadcast",
       });
+
+      // Redirection explicite après connexion réussie
+      if (data.session) {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Erreur de connexion",
