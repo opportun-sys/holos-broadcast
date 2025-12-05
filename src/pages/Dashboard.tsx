@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from "@supabase/supabase-js";
 import Header from "@/components/Header";
 import ChannelCard from "@/components/ChannelCard";
 import CreateChannelDialog from "@/components/CreateChannelDialog";
@@ -18,18 +19,40 @@ interface Channel {
 const Dashboard = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session) {
+          navigate("/auth");
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session) {
+        navigate("/auth");
+      } else {
+        loadChannels();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const loadChannels = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Si pas d'utilisateur connecté, on affiche quand même la page
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase
         .from("channels")
         .select("*")
@@ -51,8 +74,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    loadChannels();
-  }, [navigate]);
+    if (session) {
+      loadChannels();
+    }
+  }, [session]);
 
   if (loading) {
     return (
