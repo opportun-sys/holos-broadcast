@@ -25,9 +25,21 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Si erreur de refresh token, nettoyer le localStorage
+        if (error && error.message.includes("refresh_token")) {
+          localStorage.removeItem('sb-kcnrnietrmaldtlltfpp-auth-token');
+          setCheckingAuth(false);
+          return;
+        }
+        
+        if (session) {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
       }
       setCheckingAuth(false);
     };
@@ -36,7 +48,7 @@ const Auth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === 'SIGNED_IN' && session) {
         navigate("/dashboard");
       }
     });

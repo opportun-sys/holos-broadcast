@@ -30,14 +30,21 @@ const Dashboard = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (!session) {
+        if (event === 'SIGNED_OUT' || !session) {
           navigate("/auth");
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      // Si erreur de refresh token, rediriger vers auth et nettoyer
+      if (error && error.message.includes("refresh_token")) {
+        localStorage.removeItem('sb-kcnrnietrmaldtlltfpp-auth-token');
+        navigate("/auth");
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
